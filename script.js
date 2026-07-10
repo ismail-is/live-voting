@@ -4,6 +4,7 @@
 
 let currentUser = null;      // { email, googleId, name, picture }
 let hasVoted = false;
+let isVotingClosed = false;
 let liveData = {};           // last known results keyed by candidate id
 let pollTimer = null;
 
@@ -88,8 +89,26 @@ async function fetchResults() {
 }
 
 function updateResults(data) {
-  // data: { totalVotes, candidates: { C1:{name,votes,percentage}, ... } }
+  // data: { totalVotes, candidates: { C1:{name,votes,percentage}, ... }, votingStatus: 'OPEN'|'CLOSED' }
   if (!data || !data.candidates) return;
+
+  if (data.votingStatus === 'CLOSED') {
+    isVotingClosed = true;
+    if (!hasVoted) {
+      document.querySelectorAll('[data-role="vote-btn"]').forEach(btn => {
+        btn.disabled = true;
+        btn.innerHTML = '<span>⛔</span> Voting Closed';
+      });
+    }
+  } else {
+    isVotingClosed = false;
+    if (!hasVoted) {
+      document.querySelectorAll('[data-role="vote-btn"]').forEach(btn => {
+        btn.disabled = false;
+        btn.innerHTML = '<span>✅</span> صوّت الآن';
+      });
+    }
+  }
 
   animateNumber(document.getElementById('totalVotes'),
     parseInt(document.getElementById('totalVotes').textContent.replace(/,/g, '')) || 0,
@@ -315,7 +334,7 @@ function handleVoteClick(event, candidateId, candidateName) {
   const button = event.currentTarget;
   createRipple(event, button);
 
-  if (hasVoted) return;
+  if (hasVoted || isVotingClosed) return;
 
   if (!currentUser) {
     window.__pendingVote = { id: candidateId, name: candidateName };

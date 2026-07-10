@@ -31,6 +31,20 @@ function doPost(e) {
 
     const data = JSON.parse(e.postData.contents);
 
+    if (data.action === 'setStatus') {
+      const validPass = getPassword_();
+      if (String(data.password) !== validPass) {
+        return jsonResponse({ success: false, message: 'Invalid password' });
+      }
+      PropertiesService.getScriptProperties().setProperty('VOTING_STATUS', data.status);
+      return jsonResponse({ success: true, message: 'Status updated to ' + data.status, status: data.status });
+    }
+
+    const status = PropertiesService.getScriptProperties().getProperty('VOTING_STATUS') || 'OPEN';
+    if (status === 'CLOSED') {
+      return jsonResponse({ success: false, message: 'Voting is closed' });
+    }
+
     if (!data.email || !data.candidateId) {
       return jsonResponse({ success: false, message: 'Missing required fields' });
     }
@@ -76,6 +90,13 @@ function doGet(e) {
   if (action === 'check') {
     return jsonResponse(checkVote_(e.parameter.email));
   }
+  if (action === 'verifyPassword') {
+    const validPass = getPassword_();
+    if (String(e.parameter.pass) === validPass) {
+      return jsonResponse({ success: true });
+    }
+    return jsonResponse({ success: false, message: 'Invalid password' });
+  }
 
   return ContentService.createTextOutput('Voting API is running.');
 }
@@ -96,6 +117,7 @@ function getResults_() {
   }
 
   const totalVotes = Object.values(counts).reduce((a, b) => a + b, 0);
+  const status = PropertiesService.getScriptProperties().getProperty('VOTING_STATUS') || 'OPEN';
 
   const candidates = {};
   Object.keys(counts).forEach(cid => {
@@ -106,7 +128,7 @@ function getResults_() {
     };
   });
 
-  return { totalVotes, candidates };
+  return { totalVotes, candidates, votingStatus: status };
 }
 
 function checkVote_(email) {
@@ -135,4 +157,16 @@ function jsonResponse(obj) {
   return ContentService
     .createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+function getPassword_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('Sheet2');
+  if (!sheet) {
+    sheet = ss.insertSheet('Sheet2');
+    sheet.appendRow(['Password']);
+    sheet.appendRow(['1234']); // Default password
+  }
+  const data = sheet.getDataRange().getValues();
+  return data.length > 1 ? String(data[1][0]) : '1234';
 }
