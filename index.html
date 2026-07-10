@@ -158,7 +158,7 @@
       const ua = navigator.userAgent || navigator.vendor || window.opera;
       const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
       const isAndroid = /android/i.test(ua);
-      const isInApp = /FBAV|FBAN|Instagram|Line|Snapchat|Viber|WhatsApp|Threads|TikTok/i.test(ua);
+      const isInApp = /FBAV|FBAN|Instagram|Line|Snapchat|Viber|WhatsApp|Threads|TikTok|Twitter|XApp|twttr/i.test(ua);
       const isChrome = /CriOS|Chrome/i.test(ua) && !/Edg|OPR|SamsungBrowser/i.test(ua);
       // On iOS, Chrome's UA contains "CriOS". On Android, "Chrome" without "wv" (webview) usually means real Chrome.
       const isAndroidChrome = isAndroid && /Chrome\//.test(ua) && !/wv\)/.test(ua) && !isInApp;
@@ -176,26 +176,11 @@
       }
 
       if (isIOS && (!isChrome || isInApp)) {
-        // Attempt silent auto-launch of Chrome (works only if user gesture history exists or iOS allows it)
-        const target = window.location.href.replace(/^https?:\/\//, '');
-        window.location.href = 'googlechromes://' + target;
-
-        // Show manual fallback after a short delay in case auto-launch didn't fire
-        setTimeout(function () {
-          showOverlay(btnIOS);
-        }, 800);
-
+        // Immediately show the overlay. Auto-redirecting custom schemes on load causes WKWebView white-page crashes on X/Twitter.
+        showOverlay(btnIOS);
       } else if (isAndroid && (!isAndroidChrome || isInApp)) {
-        const intentUrl = 'intent://' + window.location.href.replace(/^https?:\/\//, '')
-          + '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url='
-          + encodeURIComponent(window.location.href) + ';end';
-
-        window.location.href = intentUrl;
-
-        setTimeout(function () {
-          showOverlay(btnAndroid);
-        }, 800);
-
+        // Immediately show the overlay.
+        showOverlay(btnAndroid);
       } else if (!isChrome && !isAndroidChrome) {
         // Desktop non-Chrome browser (Firefox, Edge, Safari desktop, etc.)
         showOverlay(btnOther);
