@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Vote | Luxury Voting Platform</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Font: Cairo (Arabic) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Axios -->
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="min-h-screen text-white relative overflow-x-hidden">
+
+  <div class="stars-bg"></div>
+
+  <!-- ============ HEADER ============ -->
+  <header class="relative z-10 border-b border-[rgba(212,175,55,0.25)] bg-black/40 backdrop-blur-md">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
+
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-full flex items-center justify-center text-2xl rank-gold rank-badge">🗳️</div>
+        <div>
+          <h1 class="text-xl md:text-2xl font-black gold-text">Live Vote</h1>
+          <p class="text-xs text-gray-400 flex items-center gap-1">
+            <span class="pulse-dot"></span> Live Results
+          </p>
+        </div>
+      </div>
+
+      <!-- Counters -->
+      <div class="flex flex-col md:flex-row items-center gap-4">
+        <!-- Leader counter -->
+        <div id="topCandidateBox" class="counter-box rounded-2xl px-6 py-3 flex items-center gap-3 hidden">
+          <span class="text-2xl">🏆</span>
+          <span id="leaderLabel" class="text-sm text-gray-300">Leading:</span>
+          <span id="topCandidateName" class="font-bold">---</span>
+          <span class="w-px h-6 bg-[rgba(212,175,55,0.4)]"></span>
+          <span id="topCandidateVotes" class="text-2xl font-black gold-text">0</span>
+        </div>
+
+        <!-- Total votes counter -->
+        <div class="counter-box rounded-2xl px-6 py-3 flex items-center gap-3">
+          <span class="text-2xl">🗳️</span>
+          <span class="text-sm text-gray-300">Total Votes</span>
+          <span class="w-px h-6 bg-[rgba(212,175,55,0.4)]"></span>
+          <span id="totalVotes" class="text-2xl font-black gold-text">0</span>
+        </div>
+      </div>
+
+      <!-- Auth area -->
+      <div id="authArea" class="flex items-center gap-3">
+        <div id="googleSignInBtn"></div>
+        <div id="userChip" class="hidden items-center gap-2 glass-card rounded-full px-3 py-1.5">
+          <img id="userAvatar" class="w-7 h-7 rounded-full" src="" alt="">
+          <span id="userName" class="text-sm"></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============ MAIN ============ -->
+  <main class="relative z-10 max-w-6xl mx-auto px-4 py-10">
+
+    <p id="statusBanner" class="hidden text-center mb-8 py-3 px-4 rounded-xl border text-sm font-semibold"></p>
+
+    <div id="candidatesGrid" class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <!-- Candidate cards injected by script.js -->
+    </div>
+
+    <p class="text-center text-xs text-gray-500 mt-12">
+      Each Gmail account can vote only once. Duplicates are checked on the server to ensure voting integrity.
+    </p>
+    <p class="text-center text-xs text-gray-600 mt-2">
+      <a href="admin.html" class="underline hover:text-[var(--gold-2)]">Admin Dashboard</a>
+    </p>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="script.js"></script>
+</body>
+
+</html>
