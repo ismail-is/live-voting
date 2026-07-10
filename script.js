@@ -8,6 +8,17 @@ let isVotingClosed = false;
 let liveData = {};           // last known results keyed by candidate id
 let pollTimer = null;
 
+// Safari-safe LocalStorage wrappers
+function safeSetItem(key, value) {
+  try { localStorage.setItem(key, value); } catch (e) { console.warn('localStorage setItem failed (Safari Private Mode?):', e); }
+}
+function safeGetItem(key) {
+  try { return localStorage.getItem(key); } catch (e) { console.warn('localStorage getItem failed:', e); return null; }
+}
+function safeRemoveItem(key) {
+  try { localStorage.removeItem(key); } catch (e) { console.warn('localStorage removeItem failed:', e); }
+}
+
 const grid = document.getElementById('candidatesGrid');
 const statusBanner = document.getElementById('statusBanner');
 
@@ -17,7 +28,7 @@ const statusBanner = document.getElementById('statusBanner');
 function buildCardHTML(candidate, rankIndex) {
   const rankClasses = ['rank-gold', 'rank-silver', 'rank-bronze'];
   const rankNumbers = ['1', '2', '3'];
-  const rankClass = rankClasses[rankIndex] ?? 'rank-bronze';
+  const rankClass = rankClasses[rankIndex] || 'rank-bronze';
 
   return `
     <div class="candidate-card fade-in-up glass-card rounded-3xl p-6 pt-10 relative flex flex-col items-center text-center"
@@ -25,10 +36,10 @@ function buildCardHTML(candidate, rankIndex) {
          data-id="${candidate.id}">
 
       <div class="absolute -top-6 rank-badge ${rankClass}" data-role="rank-badge">
-        ${rankNumbers[rankIndex] ?? rankIndex + 1}
+        ${rankNumbers[rankIndex] || (rankIndex + 1)}
       </div>
 
-      <span class="ribbon mb-4 text-sm" data-role="ribbon">Option ${['One', 'Two', 'Three'][rankIndex] ?? rankIndex + 1}</span>
+      <span class="ribbon mb-4 text-sm" data-role="ribbon">Option ${['One', 'Two', 'Three'][rankIndex] || (rankIndex + 1)}</span>
 
       <div class="w-full aspect-[4/3] rounded-2xl overflow-hidden border border-[rgba(212,175,55,0.3)] mb-4 bg-black/40 flex items-center justify-center">
         <img src="${candidate.image}" alt="${candidate.name}" class="w-full h-full object-contain">
@@ -161,10 +172,10 @@ function updateResults(data) {
     const rankBadge = card.querySelector('[data-role="rank-badge"]');
     const ribbon = card.querySelector('[data-role="ribbon"]');
 
-    const prevVotes = liveData[entry.id]?.votes ?? 0;
+    const prevVotes = (liveData[entry.id] && liveData[entry.id].votes) ? liveData[entry.id].votes : 0;
     animateNumber(votesEl, prevVotes, entry.votes || 0);
-    pctEl.textContent = (entry.percentage ?? 0).toFixed(1);
-    fillEl.style.width = `${entry.percentage ?? 0}%`;
+    pctEl.textContent = (entry.percentage || 0).toFixed(1);
+    fillEl.style.width = `${entry.percentage || 0}%`;
 
     // We intentionally do NOT update the rank badges here so that they remain
     // permanently fixed to their original Option numbering (1, 2, 3) 
@@ -205,7 +216,7 @@ function handleCredentialResponse(response) {
     picture: payload.picture
   };
 
-  localStorage.setItem('live_vote_user', JSON.stringify(currentUser));
+  safeSetItem('live_vote_user', JSON.stringify(currentUser));
 
   document.getElementById('googleSignInBtn').classList.add('hidden');
   const chip = document.getElementById('userChip');
@@ -228,12 +239,20 @@ function initGoogleSignIn() {
   google.accounts.id.initialize({
     client_id: CONFIG.GOOGLE_CLIENT_ID,
     callback: handleCredentialResponse,
-    use_fedcm_for_prompt: true
+    use_fedcm_for_prompt: true,
+    itp_support: true
   });
   google.accounts.id.renderButton(
     document.getElementById('googleSignInBtn'),
     { theme: 'filled_black', shape: 'pill', text: 'signin_with', locale: 'en' }
   );
+
+  // Automatically show One Tap prompt on page load
+  google.accounts.id.prompt((notification) => {
+    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+      console.log('One tap could not be displayed automatically.');
+    }
+  });
 }
 
 /* ---------------------------------------------------------
@@ -245,7 +264,7 @@ function localVoteKey(email) {
 
 function checkLocalVoteFlag() {
   if (!currentUser) return;
-  const storedVal = localStorage.getItem(localVoteKey(currentUser.email));
+  const storedVal = safeGetItem(localVoteKey(currentUser.email));
   if (storedVal) {
     lockVoting('You have already voted.', storedVal !== '1' ? storedVal : null);
   }
@@ -273,13 +292,11 @@ async function verifyVoteStatus(email) {
   if (!email) return;
   try {
     const res = await axios.get(`${CONFIG.APPS_SCRIPT_URL}?action=check&email=${encodeURIComponent(email)}`);
-    if (res.data.voted) {
-      localStorage.setItem(localVoteKey(email), res.data.candidateId);
+    if (res.data.candidateId) {
+      safeSetItem(localVoteKey(email), res.data.candidateId);
       lockVoting('You have already voted.', res.data.candidateId !== '1' ? res.data.candidateId : null);
     } else {
-      // The server says they haven't voted! (e.g. admin deleted their row)
-      // We must clear the local storage and unlock the UI!
-      localStorage.removeItem(localVoteKey(email));
+      safeRemoveItem(localVoteKey(email));
       unlockVoting();
     }
   } catch (err) {
@@ -388,7 +405,9 @@ async function submitVote(candidateId, candidateName) {
     });
 
     if (res.data.success) {
-      localStorage.setItem(localVoteKey(currentUser.email), candidateId);
+      hasVoted = true;
+      safeSetItem(localVoteKey(currentUser.email), candidateId);
+      createConfetti(document.querySelector(`[data-id="${candidateId}"] [data-role="vote-btn"]`));
       lockVoting('Your vote has been recorded. Thank you!', candidateId);
       Swal.fire({
         icon: 'success',
@@ -414,11 +433,17 @@ async function submitVote(candidateId, candidateName) {
           color: '#f4d976',
           confirmButtonColor: '#d4af37'
         });
-        fetchResults(); // Re-fetch to sync actual backend state
+        fetchResults();
       } else if (res.data.message === 'Already Voted') {
-        const previousVote = res.data.candidateId || '1';
-        localStorage.setItem(localVoteKey(currentUser.email), previousVote);
-        lockVoting('You have already voted.', previousVote !== '1' ? previousVote : null);
+        hasVoted = false;
+        const previousVote = safeGetItem(localVoteKey(currentUser.email));
+        if (previousVote) {
+          hasVoted = true;
+          safeSetItem(localVoteKey(currentUser.email), previousVote);
+        } else {
+          safeRemoveItem(localVoteKey(currentUser.email));
+          unlockVoting();
+        }
         
         Swal.fire({
           icon: 'error',
@@ -455,7 +480,7 @@ async function submitVote(candidateId, candidateName) {
 }
 
 function checkStoredUser() {
-  const storedUser = localStorage.getItem('live_vote_user');
+  const storedUser = safeGetItem('live_vote_user');
   if (storedUser) {
     try {
       currentUser = JSON.parse(storedUser);
@@ -469,7 +494,7 @@ function checkStoredUser() {
       verifyVoteStatus(currentUser.email); // Validate against server
       return true;
     } catch (e) {
-      localStorage.removeItem('live_vote_user');
+      safeRemoveItem('live_vote_user');
     }
   }
   return false;
