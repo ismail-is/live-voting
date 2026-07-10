@@ -119,7 +119,7 @@ function updateResults(data) {
 
       const leaderLabel = document.getElementById('leaderLabel');
       if (leaders.length > 1) {
-        if (leaderLabel) leaderLabel.textContent = 'Leaders (Tie):';
+        if (leaderLabel) leaderLabel.textContent = 'Leading (Tie):';
         document.getElementById('topCandidateName').textContent = leaders.map(c => c.name).join(' & ');
       } else {
         if (leaderLabel) leaderLabel.textContent = 'Leading:';
