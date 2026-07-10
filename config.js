@@ -26,18 +26,18 @@ const CONFIG = {
   CANDIDATES: [
     {
       id: "C1",
-      name: "سعود ماجد الطنباوي",
-      image: "allimg/1.jpeg"
+      name: "مشاركة سيف فهد الحازمي",
+      image: "allimg/v1.jpeg"
     },
     {
       id: "C2",
-      name: "عيسى العازمي",
-      image: "allimg/2.jpeg"
+      name: "مشاركة مسلم العتيبي",
+      image: "allimg/v2.jpeg"
     },
     {
       id: "C3",
-      name: "عماش خالد الحنتوشي",
-      image: "allimg/3.jpeg"
+      name: "مشاركة ناجح عوض العنزي ",
+      image: "allimg/v3.jpeg"
     }
   ]
 };
