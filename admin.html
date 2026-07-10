@@ -109,7 +109,7 @@ async function refreshAdmin(){
         <td class="py-2 font-bold">${i + 1}</td>
         <td class="py-2">${c.name}</td>
         <td class="py-2 gold-text font-bold">${c.votes}</td>
-        <td class="py-2">${(c.percentage || 0).toFixed(1)}%</td>
+        <td class="py-2">${(c.percentage ?? 0).toFixed(1)}%</td>
       </tr>
     `).join('');
 
