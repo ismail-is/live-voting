@@ -227,7 +227,9 @@ function handleCredentialResponse(response) {
 function initGoogleSignIn() {
   google.accounts.id.initialize({
     client_id: CONFIG.GOOGLE_CLIENT_ID,
-    callback: handleCredentialResponse
+    callback: handleCredentialResponse,
+    itp_support: true,
+    use_fedcm_for_prompt: true
   });
   google.accounts.id.renderButton(
     document.getElementById('googleSignInBtn'),

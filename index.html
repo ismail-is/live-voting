@@ -178,15 +178,12 @@
         which.classList.add('flex');
       }
 
-      if (isIOS && (!isChrome || isInApp)) {
+      if (isIOS && isInApp) {
         // Immediately show the overlay. Auto-redirecting custom schemes on load causes WKWebView white-page crashes on X/Twitter.
         showOverlay(btnIOS);
-      } else if (isAndroid && (!isAndroidChrome || isInApp)) {
+      } else if (isAndroid && isInApp) {
         // Immediately show the overlay.
         showOverlay(btnAndroid);
-      } else if (!isChrome && !isAndroidChrome) {
-        // Desktop non-Chrome browser (Firefox, Edge, Safari desktop, etc.)
-        showOverlay(btnOther);
       }
 
       // Add copyLinkBtn listener (as it was in the original logic)
