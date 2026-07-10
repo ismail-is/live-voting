@@ -95,8 +95,17 @@ function updateResults(data) {
     parseInt(document.getElementById('totalVotes').textContent.replace(/,/g, '')) || 0,
     data.totalVotes || 0);
 
-  // Build a sortable array so we can re-rank live
-  const entries = Object.entries(data.candidates).map(([id, info]) => ({ id, ...info }));
+  // Build a sortable array containing ALL candidates, even those with 0 votes
+  // (the backend omits candidates with 0 votes).
+  const entries = CONFIG.CANDIDATES.map(c => {
+    const liveInfo = data.candidates[c.id] || {};
+    return {
+      id: c.id,
+      name: c.name,
+      votes: liveInfo.votes || 0,
+      percentage: liveInfo.percentage || 0
+    };
+  });
   entries.sort((a, b) => (b.votes || 0) - (a.votes || 0));
 
   if (entries.length > 0 && entries[0].votes > 0) {
@@ -138,10 +147,9 @@ function updateResults(data) {
     pctEl.textContent = (entry.percentage ?? 0).toFixed(1);
     fillEl.style.width = `${entry.percentage ?? 0}%`;
 
-    const rankClasses = ['rank-gold', 'rank-silver', 'rank-bronze'];
-    const rankNumbers = ['1', '2', '3'];
-    rankBadge.className = `absolute -top-6 rank-badge ${rankClasses[rankIndex] ?? 'rank-bronze'}`;
-    rankBadge.textContent = rankNumbers[rankIndex] ?? rankIndex + 1;
+    // We intentionally do NOT update the rank badges here so that they remain
+    // permanently fixed to their original Option numbering (1, 2, 3) 
+    // exactly as they were initially rendered.
 
     // We intentionally do NOT reorder the DOM so that the cards stay in 
     // their static 1-2-3 layout permanently, as requested by the user.
