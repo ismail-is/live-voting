@@ -73,6 +73,9 @@ function doGet(e) {
   if (action === 'results') {
     return jsonResponse(getResults_());
   }
+  if (action === 'check') {
+    return jsonResponse(checkVote_(e.parameter.email));
+  }
 
   return ContentService.createTextOutput('Voting API is running.');
 }
@@ -104,6 +107,18 @@ function getResults_() {
   });
 
   return { totalVotes, candidates };
+}
+
+function checkVote_(email) {
+  if (!email) return { voted: false };
+  const sheet = getSheet_();
+  const values = sheet.getDataRange().getValues();
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][COL_EMAIL]).toLowerCase() === String(email).toLowerCase()) {
+      return { voted: true, candidateId: values[i][COL_CANDIDATE_ID] };
+    }
+  }
+  return { voted: false };
 }
 
 function getSheet_() {

@@ -29,8 +29,8 @@ function buildCardHTML(candidate, rankIndex) {
 
       <span class="ribbon mb-4 text-sm" data-role="ribbon">Option ${['One', 'Two', 'Three'][rankIndex] ?? rankIndex + 1}</span>
 
-      <div class="w-full aspect-[4/3] rounded-2xl overflow-hidden border border-[rgba(212,175,55,0.3)] mb-4">
-        <img src="${candidate.image}" alt="${candidate.name}" class="w-full h-full object-cover">
+      <div class="w-full aspect-[4/3] rounded-2xl overflow-hidden border border-[rgba(212,175,55,0.3)] mb-4 bg-black/40 flex items-center justify-center">
+        <img src="${candidate.image}" alt="${candidate.name}" class="w-full h-full object-contain">
       </div>
 
       <p class="text-gray-400 text-sm mb-1">Candidate</p>
@@ -195,7 +195,8 @@ function handleCredentialResponse(response) {
   document.getElementById('userAvatar').src = currentUser.picture;
   document.getElementById('userName').textContent = currentUser.name;
 
-  checkLocalVoteFlag();
+  checkLocalVoteFlag(); // Apply optimistic lock
+  verifyVoteStatus(currentUser.email); // Validate against server
 
   // If the user was mid-vote (clicked Vote before logging in), continue.
   if (window.__pendingVote) {
@@ -227,6 +228,42 @@ function checkLocalVoteFlag() {
   const storedVal = localStorage.getItem(localVoteKey(currentUser.email));
   if (storedVal) {
     lockVoting('You have already voted.', storedVal !== '1' ? storedVal : null);
+  }
+}
+
+function unlockVoting() {
+  hasVoted = false;
+  statusBanner.classList.add('hidden');
+  document.querySelectorAll('[data-role="vote-btn"]').forEach(btn => {
+    btn.disabled = false;
+    btn.innerHTML = '<span>✅</span> صوّت الآن';
+    
+    const card = btn.closest('.candidate-card');
+    if (card) {
+      card.style.boxShadow = '';
+      card.style.borderColor = '';
+      card.style.transform = '';
+      card.style.zIndex = '';
+      card.style.opacity = '1';
+    }
+  });
+}
+
+async function verifyVoteStatus(email) {
+  if (!email) return;
+  try {
+    const res = await axios.get(`${CONFIG.APPS_SCRIPT_URL}?action=check&email=${encodeURIComponent(email)}`);
+    if (res.data.voted) {
+      localStorage.setItem(localVoteKey(email), res.data.candidateId);
+      lockVoting('You have already voted.', res.data.candidateId !== '1' ? res.data.candidateId : null);
+    } else {
+      // The server says they haven't voted! (e.g. admin deleted their row)
+      // We must clear the local storage and unlock the UI!
+      localStorage.removeItem(localVoteKey(email));
+      unlockVoting();
+    }
+  } catch (err) {
+    console.error('Error verifying vote status', err);
   }
 }
 
@@ -375,7 +412,8 @@ function checkStoredUser() {
       chip.classList.add('flex');
       document.getElementById('userAvatar').src = currentUser.picture;
       document.getElementById('userName').textContent = currentUser.name;
-      checkLocalVoteFlag();
+      checkLocalVoteFlag(); // Apply optimistic lock
+      verifyVoteStatus(currentUser.email); // Validate against server
       return true;
     } catch (e) {
       localStorage.removeItem('live_vote_user');
