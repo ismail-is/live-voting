@@ -392,19 +392,45 @@ async function submitVote(candidateId, candidateName) {
       });
       fetchResults();
     } else {
-      // Backend rejected the vote. Check if they returned the previously voted candidate ID!
-      const previousVote = res.data.candidateId || '1';
-      localStorage.setItem(localVoteKey(currentUser.email), previousVote);
-      lockVoting('You have already voted.', previousVote !== '1' ? previousVote : null);
-      
-      Swal.fire({
-        icon: 'error',
-        title: 'Already Voted',
-        text: 'You have already voted.',
-        background: '#0d0b08',
-        color: '#f4d976',
-        confirmButtonColor: '#d4af37'
-      });
+      if (res.data.message === 'Voting is closed') {
+        isVotingClosed = true;
+        buttons.forEach(btn => {
+          btn.disabled = true;
+          btn.innerHTML = '<span>⛔</span> Voting Closed';
+        });
+        Swal.fire({
+          icon: 'error',
+          title: 'Voting Closed',
+          text: 'Sorry, voting has been closed.',
+          background: '#0d0b08',
+          color: '#f4d976',
+          confirmButtonColor: '#d4af37'
+        });
+        fetchResults(); // Re-fetch to sync actual backend state
+      } else if (res.data.message === 'Already Voted') {
+        const previousVote = res.data.candidateId || '1';
+        localStorage.setItem(localVoteKey(currentUser.email), previousVote);
+        lockVoting('You have already voted.', previousVote !== '1' ? previousVote : null);
+        
+        Swal.fire({
+          icon: 'error',
+          title: 'Already Voted',
+          text: 'You have already voted.',
+          background: '#0d0b08',
+          color: '#f4d976',
+          confirmButtonColor: '#d4af37'
+        });
+      } else {
+        buttons.forEach(b => b.disabled = false);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: res.data.message || 'Could not record your vote.',
+          background: '#0d0b08',
+          color: '#f4d976',
+          confirmButtonColor: '#d4af37'
+        });
+      }
     }
   } catch (err) {
     console.error(err);
