@@ -98,7 +98,53 @@ function doGet(e) {
     return jsonResponse({ success: false, message: 'Invalid password' });
   }
 
+  if (action === 'vote') {
+    return handleVoteGet_(e.parameter);
+  }
+
   return ContentService.createTextOutput('Voting API is running.');
+}
+
+function handleVoteGet_(data) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(30000);
+
+    const status = PropertiesService.getScriptProperties().getProperty('VOTING_STATUS') || 'OPEN';
+    if (status === 'CLOSED') {
+      return jsonResponse({ success: false, message: 'Voting is closed' });
+    }
+
+    if (!data.email || !data.candidateId) {
+      return jsonResponse({ success: false, message: 'Missing required fields' });
+    }
+
+    const sheet = getSheet_();
+    const values = sheet.getDataRange().getValues();
+
+    // Server-side duplicate check — never trust the frontend.
+    for (let i = 1; i < values.length; i++) {
+      if (String(values[i][COL_EMAIL]).toLowerCase() === String(data.email).toLowerCase()) {
+        const previousVoteId = values[i][COL_CANDIDATE_ID];
+        return jsonResponse({ success: false, message: 'Already Voted', candidateId: previousVoteId });
+      }
+    }
+
+    sheet.appendRow([
+      new Date(),
+      data.googleId || '',
+      data.email,
+      data.candidateName || '',
+      data.candidateId
+    ]);
+
+    return jsonResponse({ success: true, message: 'Vote Submitted Successfully' });
+
+  } catch (err) {
+    return jsonResponse({ success: false, message: 'Server Error: ' + err.message });
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function getResults_() {

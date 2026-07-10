@@ -9,14 +9,22 @@
 
 const CONFIG = {
 
-  // 1) Paste the OAuth 2.0 "Web application" Client ID you create
-  //    in Google Cloud Console (Google Identity Services).
-  GOOGLE_CLIENT_ID: "56178672870-k8fc18v0l3s7thjbo59scthqfijmjnet.apps.googleusercontent.com",
+  // 1) Replace this with your actual Firebase config object
+  //    found in your Firebase Project Settings > General > Your apps.
+  FIREBASE_CONFIG: {
+  apiKey: "AIzaSyAuM29zEj6hXtWjANnuNUFSBLv8GKQtzlo",
+  authDomain: "voteing-bf34c.firebaseapp.com",
+  projectId: "voteing-bf34c",
+  storageBucket: "voteing-bf34c.firebasestorage.app",
+  messagingSenderId: "629775256044",
+  appId: "1:629775256044:web:39b886b590137b74fe98c9",
+  measurementId: "G-QJ9Q2D5ZEF"
+  },
 
   // 2) Paste the URL you get after deploying the Apps Script as a
   //    Web App (Deploy > New deployment > Web app). It looks like:
   //    https://script.google.com/macros/s/XXXXXXXXXXXX/exec
-  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbwM3HlAXV1c4E84NdUehVAuq72dIeEhUIcuvboeZ4tSQyI0ftZNNj5wfx2GYb-b0Y7p/exec",
+  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbxeOqCTHgaHURMXAjhrylVAjPrBpMmXNBXoEEPwm0VhNQ9Lhk3s9Q0yp6mPdArc17JJ/exec",
 
   // 3) How often (ms) the live results are refreshed.
   REFRESH_INTERVAL_MS: 5000,

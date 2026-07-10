@@ -187,54 +187,54 @@ function startPolling() {
 /* ---------------------------------------------------------
    4. GOOGLE IDENTITY SERVICES (LOGIN)
    --------------------------------------------------------- */
-function decodeJwt(token) {
-  const base64Url = token.split('.')[1];
-  const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-  const json = decodeURIComponent(atob(base64).split('').map(c =>
-    '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
-  ).join(''));
-  return JSON.parse(json);
-}
-
-function handleCredentialResponse(response) {
-  const payload = decodeJwt(response.credential);
-  currentUser = {
-    email: payload.email,
-    googleId: payload.sub,
-    name: payload.name,
-    picture: payload.picture
-  };
-
-  localStorage.setItem('live_vote_user', JSON.stringify(currentUser));
-
-  document.getElementById('googleSignInBtn').classList.add('hidden');
-  const chip = document.getElementById('userChip');
-  chip.classList.remove('hidden');
-  chip.classList.add('flex');
-  document.getElementById('userAvatar').src = currentUser.picture;
-  document.getElementById('userName').textContent = currentUser.name;
-
-  checkLocalVoteFlag(); // Apply optimistic lock
-  verifyVoteStatus(currentUser.email); // Validate against server
-
-  // If the user was mid-vote (clicked Vote before logging in), continue.
-  if (window.__pendingVote) {
-    submitVote(window.__pendingVote.id, window.__pendingVote.name);
-    window.__pendingVote = null;
+function initFirebaseAuth() {
+  // Initialize Firebase
+  if (!firebase.apps.length) {
+    firebase.initializeApp(CONFIG.FIREBASE_CONFIG);
   }
-}
+  
+  const auth = firebase.auth();
+  const provider = new firebase.auth.GoogleAuthProvider();
+  // Optional: provider.setCustomParameters({ prompt: 'select_account' });
 
-function initGoogleSignIn() {
-  google.accounts.id.initialize({
-    client_id: CONFIG.GOOGLE_CLIENT_ID,
-    callback: handleCredentialResponse,
-    itp_support: true,
-    use_fedcm_for_prompt: true
+  // Handle the Sign In Button Click
+  const signInBtn = document.getElementById('googleSignInBtn');
+  if (signInBtn) {
+    signInBtn.addEventListener('click', () => {
+      // Use signInWithRedirect for maximum compatibility on iOS/Safari
+      auth.signInWithRedirect(provider);
+    });
+  }
+
+  // Listen for authentication state changes
+  auth.onAuthStateChanged((user) => {
+    if (user) {
+      currentUser = {
+        email: user.email,
+        googleId: user.uid,
+        name: user.displayName,
+        picture: user.photoURL
+      };
+
+      localStorage.setItem('live_vote_user', JSON.stringify(currentUser));
+
+      if (signInBtn) signInBtn.classList.add('hidden');
+      const chip = document.getElementById('userChip');
+      chip.classList.remove('hidden');
+      chip.classList.add('flex');
+      document.getElementById('userAvatar').src = currentUser.picture;
+      document.getElementById('userName').textContent = currentUser.name;
+
+      checkLocalVoteFlag(); // Apply optimistic lock
+      verifyVoteStatus(currentUser.email); // Validate against server
+
+      // If the user was mid-vote (clicked Vote before logging in), continue.
+      if (window.__pendingVote) {
+        submitVote(window.__pendingVote.id, window.__pendingVote.name);
+        window.__pendingVote = null;
+      }
+    }
   });
-  google.accounts.id.renderButton(
-    document.getElementById('googleSignInBtn'),
-    { theme: 'filled_black', shape: 'pill', text: 'signin_with', locale: 'en' }
-  );
 }
 
 /* ---------------------------------------------------------
@@ -369,23 +369,16 @@ async function submitVote(candidateId, candidateName) {
   }
 
   try {
-    const payload = {
-      email: currentUser.email,
-      googleId: currentUser.googleId,
-      candidateId,
-      candidateName
-    };
+    // Send the vote as a GET request to completely eliminate Google Apps Script POST/CORS redirect bugs.
+    const url = new URL(CONFIG.APPS_SCRIPT_URL);
+    url.searchParams.append('action', 'vote');
+    url.searchParams.append('email', currentUser.email);
+    url.searchParams.append('googleId', currentUser.googleId);
+    url.searchParams.append('candidateId', candidateId);
+    url.searchParams.append('candidateName', candidateName);
 
-    // Sent as text/plain to avoid a CORS preflight against Apps Script.
-    // Using native fetch instead of axios because axios has a known bug 
-    // handling Google Apps Script 302 redirects which causes a CORS error after success.
-    const response = await fetch(CONFIG.APPS_SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify(payload),
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-    });
-    
-    const resData = await response.json();
+    const res = await axios.get(url.toString());
+    const resData = res.data;
 
     if (resData.success) {
       localStorage.setItem(localVoteKey(currentUser.email), candidateId);
@@ -485,12 +478,6 @@ window.addEventListener('load', () => {
   const isLoggedIn = checkStoredUser();
 
   if (!isLoggedIn) {
-    // google script loads async — poll for it briefly before init
-    const waitForGoogle = setInterval(() => {
-      if (window.google && google.accounts && google.accounts.id) {
-        clearInterval(waitForGoogle);
-        initGoogleSignIn();
-      }
-    }, 150);
+    initFirebaseAuth();
   }
 });
