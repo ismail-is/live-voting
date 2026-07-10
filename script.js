@@ -227,7 +227,8 @@ function handleCredentialResponse(response) {
 function initGoogleSignIn() {
   google.accounts.id.initialize({
     client_id: CONFIG.GOOGLE_CLIENT_ID,
-    callback: handleCredentialResponse
+    callback: handleCredentialResponse,
+    use_fedcm_for_prompt: true
   });
   google.accounts.id.renderButton(
     document.getElementById('googleSignInBtn'),
@@ -339,7 +340,14 @@ function handleVoteClick(event, candidateId, candidateName) {
   if (!currentUser) {
     window.__pendingVote = { id: candidateId, name: candidateName };
     showBanner('Please sign in with Google first to vote.', 'info');
-    google.accounts.id.prompt();
+    google.accounts.id.prompt((notification) => {
+      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+        // Fallback for Safari/browsers where One Tap is blocked
+        const authArea = document.getElementById('authArea');
+        if (authArea) authArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        showBanner('Please use the Sign In button at the top to continue.', 'warning');
+      }
+    });
     return;
   }
 
