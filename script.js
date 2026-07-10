@@ -375,11 +375,17 @@ async function submitVote(candidateId, candidateName) {
     };
 
     // Sent as text/plain to avoid a CORS preflight against Apps Script.
-    const res = await axios.post(CONFIG.APPS_SCRIPT_URL, JSON.stringify(payload), {
+    // Using native fetch instead of axios because axios has a known bug 
+    // handling Google Apps Script 302 redirects which causes a CORS error after success.
+    const response = await fetch(CONFIG.APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload),
       headers: { 'Content-Type': 'text/plain;charset=utf-8' }
     });
+    
+    const resData = await response.json();
 
-    if (res.data.success) {
+    if (resData.success) {
       localStorage.setItem(localVoteKey(currentUser.email), candidateId);
       lockVoting('Your vote has been recorded. Thank you!', candidateId);
       Swal.fire({
@@ -392,7 +398,7 @@ async function submitVote(candidateId, candidateName) {
       });
       fetchResults();
     } else {
-      if (res.data.message === 'Voting is closed') {
+      if (resData.message === 'Voting is closed') {
         isVotingClosed = true;
         buttons.forEach(btn => {
           btn.disabled = true;
@@ -407,8 +413,8 @@ async function submitVote(candidateId, candidateName) {
           confirmButtonColor: '#d4af37'
         });
         fetchResults(); // Re-fetch to sync actual backend state
-      } else if (res.data.message === 'Already Voted') {
-        const previousVote = res.data.candidateId || '1';
+      } else if (resData.message === 'Already Voted') {
+        const previousVote = resData.candidateId || '1';
         localStorage.setItem(localVoteKey(currentUser.email), previousVote);
         lockVoting('You have already voted.', previousVote !== '1' ? previousVote : null);
         
@@ -425,7 +431,7 @@ async function submitVote(candidateId, candidateName) {
         Swal.fire({
           icon: 'error',
           title: 'Error',
-          text: res.data.message || 'Could not record your vote.',
+          text: resData.message || 'Could not record your vote.',
           background: '#0d0b08',
           color: '#f4d976',
           confirmButtonColor: '#d4af37'
