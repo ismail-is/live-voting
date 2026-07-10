@@ -201,8 +201,14 @@ function initFirebaseAuth() {
   const signInBtn = document.getElementById('googleSignInBtn');
   if (signInBtn) {
     signInBtn.addEventListener('click', () => {
-      // Use signInWithRedirect for maximum compatibility on iOS/Safari
-      auth.signInWithRedirect(provider);
+      // Use signInWithPopup to avoid iOS Safari partitioned storage redirect errors
+      auth.signInWithPopup(provider).catch(err => {
+        console.error('Popup Sign-In Error:', err);
+        // Fallback if popup is blocked by an in-app browser
+        if (err.code === 'auth/popup-blocked') {
+          auth.signInWithRedirect(provider);
+        }
+      });
     });
   }
 
