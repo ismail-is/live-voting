@@ -12,7 +12,7 @@ const CONFIG = {
   // 1) Replace this with your actual Firebase config object
   //    found in your Firebase Project Settings > General > Your apps.
   FIREBASE_CONFIG: {
-  apiKey: "AIzaSyAuM29zEj6hXtWjANnuNUFSBLv8GKQtzlo",
+    apiKey: "AIzaSyAuM29zEj6hXtWjANnuNUFSBLv8GKQtzlo",
   authDomain: "voteing-bf34c.firebaseapp.com",
   projectId: "voteing-bf34c",
   storageBucket: "voteing-bf34c.firebasestorage.app",
