@@ -220,8 +220,8 @@ function initFirebaseAuth() {
         setTimeout(() => {
           Swal.fire({
             icon: 'info',
-            title: 'Action Required',
-            text: 'To vote, please tap the compass icon (Safari) at the bottom right, or tap the 3 dots at the top right and select "Open in Browser".',
+            title: 'الإجراء المطلوب',
+            text: "    للتصويت، يرجى الضغط على أيقونة البوصلة (Safari) الموجودة في أسفل اليمين، أو الضغط على النقاط الثلاث في أعلى اليمين ثم اختيار “فتح في المتصفح”",
             background: '#0d0b08',
             color: '#f4d976',
             confirmButtonColor: '#d4af37'
