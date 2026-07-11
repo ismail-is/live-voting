@@ -199,12 +199,64 @@ function initFirebaseAuth() {
 
   // Handle the Sign In Button Click
   const signInBtn = document.getElementById('googleSignInBtn');
-  if (signInBtn) {
+  const escapeAppBtn = document.getElementById('escapeAppBtn');
+  
+  // In-App Browser Detection
+  const ua = navigator.userAgent || navigator.vendor || window.opera;
+  const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+  const isAndroid = /android/i.test(ua);
+  const isInApp = /FBAV|FBAN|Instagram|Line|Snapchat|Viber|WhatsApp|Threads|TikTok|Twitter|XApp|twttr/i.test(ua);
+
+  if (isInApp && escapeAppBtn && signInBtn) {
+    // Hide Google Sign In, Show Escape Button
+    signInBtn.classList.add('hidden');
+    signInBtn.classList.remove('flex');
+    escapeAppBtn.classList.remove('hidden');
+    escapeAppBtn.classList.add('flex');
+
+    escapeAppBtn.addEventListener('click', () => {
+      if (isIOS) {
+        window.location.href = "googlechromes://voting.darkmedia.tech/";
+        setTimeout(() => {
+          Swal.fire({
+            icon: 'info',
+            title: 'Action Required',
+            text: 'To vote, please tap the compass icon (Safari) at the bottom right, or tap the 3 dots at the top right and select "Open in Browser".',
+            background: '#0d0b08',
+            color: '#f4d976',
+            confirmButtonColor: '#d4af37'
+          });
+        }, 800);
+      } else if (isAndroid) {
+        window.location.href = "intent://voting.darkmedia.tech/#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=" + encodeURIComponent("https://voting.darkmedia.tech/") + ";end";
+        setTimeout(() => {
+          Swal.fire({
+            icon: 'info',
+            title: 'Action Required',
+            text: 'To vote, please tap the 3 dots at the top right and select "Open in Chrome".',
+            background: '#0d0b08',
+            color: '#f4d976',
+            confirmButtonColor: '#d4af37'
+          });
+        }, 800);
+      } else {
+        Swal.fire({
+          icon: 'info',
+          title: 'Action Required',
+          text: 'Please open this link in a normal web browser (Chrome, Safari, Edge) to vote securely.',
+          background: '#0d0b08',
+          color: '#f4d976',
+          confirmButtonColor: '#d4af37'
+        });
+      }
+    });
+  } else if (signInBtn) {
+    // Normal Secure Browser behavior
     signInBtn.addEventListener('click', () => {
       // Use signInWithPopup to avoid iOS Safari partitioned storage redirect errors
       auth.signInWithPopup(provider).catch(err => {
         console.error('Popup Sign-In Error:', err);
-        // Fallback if popup is blocked by an in-app browser
+        // Fallback if popup is somehow blocked
         if (err.code === 'auth/popup-blocked') {
           auth.signInWithRedirect(provider);
         }
